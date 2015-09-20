@@ -14,7 +14,7 @@ class ListApplicativeSpec extends FunSpec with Matchers {
   
   import Applicative.listApplicative._
 
-  describe("An applicate instance for list") {
+  describe("An applicative instance for list") {
     it("should map a function over a list") {
       val result_of_map = map(_1_2_3_as_string)(Integer.parseInt)
 
