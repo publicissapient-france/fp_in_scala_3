@@ -57,15 +57,15 @@ En échange de cette seule méthode abstraite, l'abstraction nous permet par exe
 	mapply(1)(List(x => x + 2, x => x * 4))
 	
 	
-La somme d'entiers nécessite deux paramètres, ici on doit en figer un des deux (2 pour l'addition et 4 pour la multiplication).
+La somme d'entiers est une opération qui nécessite deux paramètres, ici on doit en figer un des deux (2 pour l'addition et 4 pour la multiplication).
 
 Mais impossible avec le foncteur de passer une fonction du style ( x:Int , y:Int ) => x + y .
 
 
-* l'abstraction application foncteur.
+* l'abstraction applicative foncteur.
 
 L'applicative est une spécialisation de foncteur. Elle a besoin de deux méthodes abstraites **point** et **ap**.
-Grâce à cela, on peut non seulement avoir les mêmes API que le foncteur. Le foncteur était limité à appliquer une fonction sur un ensemble d'éléments ou un ensemble de fonctions sur un seul élément. 
+Grâce à cela, on peut non seulement avoir les mêmes API que le foncteur et bien d'autres encore. Le foncteur est limité à appliquer une fonction sur un ensemble d'éléments ou un ensemble de fonctions sur un seul élément. 
 L'applicative lève cette contrainte en permettant l'application d'un ensemble de fonctions sur un ensemble d'éléments!
 
 Par exemple, nous étions limités à appliquer + 1 sur une liste d'entiers, mais il était impossible avec le seul foncteur de faire la somme de deux listes d'entiers.
@@ -176,7 +176,6 @@ Soit
 	
 	f(a) shouldBe flatMap(point(a)(f)
 
-TODO
 
 * associative flatMap
 
@@ -291,7 +290,7 @@ Pour cela, il faut changer une chose sur le trait **Retry**. Il faut implémente
 
 Le for comprehension supporte aussi deux autres méthodes, **filter** et **foreach**.
 
-**filter permet de filter l'exécution d'un programme en fonction d'une condition sur une valeur de Success.
+**filter** permet de filter l'exécution d'un programme en fonction d'une condition sur une valeur de Success.
 
 Implémenter filter sur le trait Retry.
 
@@ -320,10 +319,93 @@ Si Retry a une instance de Monade, cette dernière doit respecter les lois assoc
 
 Que remarquez vous sur le dernier? Qu'en concluez-vous ?
 
-	
-##Exo9: Another monad, the writer
+##Exo9: Monad, Applicative, Functor?
 
-TODO
+Nous voici donc avec 3 abstractions. Mais comment choisir? 
+
+Petit conseil, choisissez toujours l'abstraction la plus simple. Nous avons vu que pour passer d'un foncteur à un applicative et d'un applicative à une monade, il y a des propriétés suplémentaire à ajoute des lois et contraintes que le type et son opération de composition doit respecter.
+
+Commencez donc par utiliser un Foncteur si map suffit, vous ferez le choix d'un applicative quand vos structures doivent être manipulées 2 par 2, et une monade pour chaîner des traitements.
+
+La monade est elle vraiment plus puissante que les deux autres? Ses contraintes l'empêches d'une seule chose que les deux autres ont automatiquement, la composition.
+
+En effet, foncteurs et applicatives se composent entre eux automatiquement, pas les monades.
+
+Rendez-vous dans les classes **fr.xebia.xke.fp2.ListApplicativeSpec** et **fr.xebia.xke.fp2.ListeFoncteurSpec** puis regardez les tests EXO_3_9. 
+
+Dans le cadre du foncteur, nous avons déjà créé un foncteur d'Option et un foncteur de List. Nous les composons pour créer un foncteur de List d'Option.
+
+      val plus_one: (Int => Int) = _ + 1
+
+ 	  //composition du foncteur list puis option
+      val list_of_options = List(Some(1), None)
+      val listOptionFoncteur = Foncteur.listFoncteur.compose(Foncteur.optionFoncteur)
+      val firstResult = listOptionFoncteur.map(list_of_options)(plus_one)
+      firstResult shouldBe List(Some(2), None)
+
+      //composition du foncteur option puis list
+      val option_of_list = Some(List(1, 2, 3))
+      val optionListFoncteur = Foncteur.optionFoncteur.compose(Foncteur.listFoncteur)
+      val secondResult = optionListFoncteur.map(option_of_list)(plus_one)
+      secondResult shouldBe Some(List(2, 3, 4))
+
+      //composition du foncteur list puis list
+      val list_of_list = List(List(1, 2, 3), Nil)
+      val listListFoncteur = Foncteur.listFoncteur.compose(Foncteur.listFoncteur)
+      val thirdResult = listListFoncteur.map(list_of_list)(plus_one)
+      secondResult shouldBe List(List(2, 3, 4), Nil)
+
+Ce qui est intéressant et puissant, c'est d'avoir écrit une seule fois l'instance de foncteur de list et d'option puis ensuite de composer ses instances pour être capable d'appliquer cette fonction **plus_one** dans plusieurs contexte.
+
+On peut ainsi application **plus_one** sur une List[Option], une Option[List] ou encore List[List].
+
+Cela est aussi vrai pour les applicatives.
+
+      val plus: ((Int, Int) => Int) = _ + _
+
+      //composition de l'applicative list puis option
+      val list_of_options_1 = List(Some(1), None)
+      val list_of_options_2 = List(None, Some(2))
+      val listOptionApplicative = Applicative.listApplicative.compose(Applicative.optionApplicative)
+      val firstResult = listOptionApplicative.apply2(list_of_options_1, list_of_options_2)(plus)
+      firstResult shouldBe List(None, Some(3), None, None)
+
+	  //composition de l'applicative option puis list
+      val option_of_list1 = Some(List(1, 2, 3))
+      val option_of_list2 = None
+      val optionListApplicative = Applicative.optionApplicative.compose(Applicative.listApplicative)
+      val secondResult = optionListApplicative.apply2(option_of_list1, option_of_list2)(plus)
+      secondResult shouldBe None
+
+      //composition de l'applicative list puis list
+      val list_of_list_1 = List(List(1), Nil)
+      val list_of_list_2 = List(Nil, List(2, 3))
+      val listListApplicative = Applicative.listApplicative.compose(Applicative.listApplicative)
+      val thirdResult: List[List[Int]] = listListApplicative.apply2(list_of_list_1, list_of_list_2)(plus)
+      thirdResult shouldBe List(
+        Nil,
+        List(3, 4),
+        Nil,
+        Nil
+      )
+
+**compose** est une méthode puissante générique pour TOUTES les instances de foncteur et applicative.
+
+Nous ne le ferons pas ici mais pour une monade, il est nécessaire d'écrire la méthode compose pour chaque combinaison!
+L'instance Monad[Option[List[_]] est différente de celle Monad[List[Option[_]]. D'ailleurs, il existe une monade pour combiner les monades! Mais cela dépasse le cadre de cet atelier.
+	
+##Exo10: Another monad, the writer
+
+Et voici un dernier exercice pour se mettre en jambe. Nous allons écrire la monade Writer. 
+
+Celle-ci permet d'encapsuler l'écriture d'une "log" avec l'application d'une fonction. 
+
+Nous allons créé ici une instance de monade Writer qui maintient une chaine de caractères des différentes opérations effectuées sur la monade. Nous l'appelons **StringWriter**.
+
+C'est donc une *case class* qui contient une valeur et la chaîne de caractères de log. Il existe deux méthodes de constructions sur l'objet compagnon, **startWith** et **alterTo**. 
+Ce sont simplément des constructeurs qui apportent de la sémantique à la lecture du code.
+
+Implémenter l'instance de monade de StringWriter.
 	
 	case class StringWriter[A](value: A, log: String) {
 
@@ -337,8 +419,6 @@ TODO
 
 	  private def now = Instant.now()
 
-	  def apply[A](a: A): StringWriter[A] = stringWriterMonad.point(a)
-
 	  def startWith[A](a: A): StringWriter[A] = apply(a)
 
 	  def alterTo[A](newValue: A, cause: String): StringWriter[A] = StringWriter(newValue, s"$now: changing to: $newValue | ** $cause")
@@ -351,6 +431,7 @@ TODO
 	  }
 	}
 
+Implémenter l'instance de monade de JsonWriter, qui fait presque la même chose mais log les événements dans un JSArray.
 
 TO JSON Writer
 
@@ -366,8 +447,6 @@ TO JSON Writer
 	object JsonWriter {
 
 	  private def now = Instant.now()
-
-	  def apply[A](a: A): JsonWriter[A] = jsonWriterMonad.point(a)
 
 	  def startWith[A](a: A): JsonWriter[A] = apply(a)
 

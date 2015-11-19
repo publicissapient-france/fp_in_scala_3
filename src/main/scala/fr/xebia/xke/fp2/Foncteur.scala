@@ -4,7 +4,8 @@ import scala.language.higherKinds
 import fr.xebia.xke._
 
 trait Foncteur[F[_]] {
-  
+  self =>
+
   def map[A, B](fa: F[A])(f: (A => B)): F[B]
 
   def fproduct[A, B](fa: F[A])(f: A => B): F[(A, B)] = map(fa)(a => (a, f(a)))
@@ -17,10 +18,15 @@ trait Foncteur[F[_]] {
 
 
   def lift[A, B](f: A => B): F[A] => F[B] = (fa: F[A]) => map(fa)(f)
-  
+
+  def compose[G[_]](FG: Foncteur[G]): Foncteur[({type λ[α] = F[G[α]]})#λ] = new Foncteur[({type λ[α] = F[G[α]]})#λ] {
+    override def map[A, B](fa: F[G[A]])(f: A => B): F[G[B]] =
+      self.map(fa)(ga => FG.map(ga)(f))
+  }
+
 }
 
-object Foncteur{
+object Foncteur {
 
   val listFoncteur = new Foncteur[List] {
     def map[A, B](fa: List[A])(f: (A => B)): List[B] = fa match {
@@ -35,5 +41,5 @@ object Foncteur{
       case Some(x) => Some(f(x))
     }
   }
-  
+
 }

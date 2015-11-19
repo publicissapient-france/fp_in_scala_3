@@ -46,3 +46,7 @@ exo8 := {(testOnly in Test).toTask(" -- -n EXO_3_8").value}
 lazy val exo9: TaskKey[Unit] = taskKey("Launch EXO 9")
 
 exo9 := {(testOnly in Test).toTask(" -- -n EXO_3_9").value}
+
+lazy val exo10: TaskKey[Unit] = taskKey("Launch EXO 10")
+
+exo10 := {(testOnly in Test).toTask(" -- -n EXO_3_10").value}

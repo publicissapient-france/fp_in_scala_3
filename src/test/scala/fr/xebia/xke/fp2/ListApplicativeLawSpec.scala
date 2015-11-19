@@ -1,6 +1,7 @@
 package fr.xebia.xke.fp2
 
 import fr.xebia.xke._
+import fr.xebia.xke.fp3.EXO_3_9
 import org.scalacheck.Gen
 import org.scalacheck.Gen.{alphaLowerChar, choose, oneOf}
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
@@ -11,7 +12,7 @@ class ListApplicativeSpec extends FunSpec with Matchers {
   val _1_2_3_as_string = List("1", "2", "3")
 
   val _1_2_3_as_int = List(1, 2, 3)
-  
+
   import Applicative.listApplicative._
 
   describe("An applicative instance for list") {
@@ -62,8 +63,34 @@ class ListApplicativeSpec extends FunSpec with Matchers {
         9)
     }
 
-  }
+    it("can be composed with another applicative", EXO_3_9) {
+      val plus: ((Int, Int) => Int) = _ + _
 
+      val list_of_options_1 = List(Some(1), None)
+      val list_of_options_2 = List(None, Some(2))
+      val listOptionApplicative = Applicative.listApplicative.compose(Applicative.optionApplicative)
+      val firstResult = listOptionApplicative.apply2(list_of_options_1, list_of_options_2)(plus)
+      firstResult shouldBe List(None, Some(3), None, None)
+
+
+      val option_of_list1 = Some(List(1, 2, 3))
+      val option_of_list2 = None
+      val optionListApplicative = Applicative.optionApplicative.compose(Applicative.listApplicative)
+      val secondResult = optionListApplicative.apply2(option_of_list1, option_of_list2)(plus)
+      secondResult shouldBe None
+
+      val list_of_list_1 = List(List(1), Nil)
+      val list_of_list_2 = List(Nil, List(2, 3))
+      val listListApplicative = Applicative.listApplicative.compose(Applicative.listApplicative)
+      val thirdResult: List[List[Int]] = listListApplicative.apply2(list_of_list_1, list_of_list_2)(plus)
+      thirdResult shouldBe List(
+        Nil,
+        List(3, 4),
+        Nil,
+        Nil
+      )
+    }
+  }
 }
 
 object ListApplicativeSpec {

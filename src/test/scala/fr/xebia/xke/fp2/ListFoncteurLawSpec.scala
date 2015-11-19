@@ -1,6 +1,7 @@
 package fr.xebia.xke.fp2
 
 import fr.xebia.xke._
+import fr.xebia.xke.fp3.EXO_3_9
 import org.scalacheck.Gen
 import org.scalacheck.Gen.{alphaLowerChar, oneOf}
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
@@ -11,7 +12,7 @@ class ListeFoncteurSpec extends FunSpec with Matchers {
   val _1_2_3_as_string = List("1", "2", "3")
 
   val _1_2_3_as_int = List(1, 2, 3)
-  
+
   import Foncteur.listFoncteur._
 
   describe("Functor instance for list") {
@@ -41,6 +42,27 @@ class ListeFoncteurSpec extends FunSpec with Matchers {
         "HELLO",
         "hello"
       )
+    }
+
+    it("can be composed with another functor", EXO_3_9) {
+      val plus_one: (Int => Int) = _ + 1
+
+      val list_of_options = List(Some(1), None)
+      val listOptionFoncteur = Foncteur.listFoncteur.compose(Foncteur.optionFoncteur)
+      val firstResult = listOptionFoncteur.map(list_of_options)(plus_one)
+      firstResult shouldBe List(Some(2), None)
+
+
+      val option_of_list = Some(List(1, 2, 3))
+      val optionListFoncteur = Foncteur.optionFoncteur.compose(Foncteur.listFoncteur)
+      val secondResult = optionListFoncteur.map(option_of_list)(plus_one)
+      secondResult shouldBe Some(List(2, 3, 4))
+
+
+      val list_of_list = List(List(1, 2, 3), Nil)
+      val listListFoncteur = Foncteur.listFoncteur.compose(Foncteur.listFoncteur)
+      val thirdResult = listListFoncteur.map(list_of_list)(plus_one)
+      thirdResult shouldBe List(List(2, 3, 4), Nil)
     }
   }
 }

@@ -8,7 +8,7 @@ class WriterSpec extends FunSpec with Matchers {
 
     import fr.xebia.xke.fp3.StringWriter._
 
-    it("should start with an empty log", EXO_3_9) {
+    it("should start with an empty log", EXO_3_10) {
 
       val computation = StringWriter.startWith(1)
 
@@ -16,7 +16,7 @@ class WriterSpec extends FunSpec with Matchers {
       computation.value shouldBe 1
     }
 
-    it("should store log ", EXO_3_9) {
+    it("should store log ", EXO_3_10) {
 
       val computation: StringWriter[Int] = for {
         start <- StringWriter.startWith(1)
@@ -36,7 +36,7 @@ class WriterSpec extends FunSpec with Matchers {
 
     import fr.xebia.xke.fp3.JsonWriter._
 
-    it("should start with an empty log", EXO_3_9) {
+    it("should start with an empty log", EXO_3_10) {
 
       val computation = JsonWriter.startWith(1)
 
@@ -44,7 +44,7 @@ class WriterSpec extends FunSpec with Matchers {
       computation.value shouldBe 1
     }
 
-    it("should store log ", EXO_3_9) {
+    it("should store log ", EXO_3_10) {
 
       val computation: JsonWriter[Int] = for {
         start <- JsonWriter.startWith(1)
