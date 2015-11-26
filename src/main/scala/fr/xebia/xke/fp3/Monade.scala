@@ -13,13 +13,13 @@ trait Monade[F[_]] extends Applicative[F] {
   // def point[A](a: => A): List[A] = ???
 
   //TODO EXO2
-  override def map[A, B](fa: F[A])(f: A => B): F[B] = ???
+  override def map[A, B](fa: F[A])(f: A => B): F[B] = flatMap(fa)(???)
 
   //TODO EXO2
-  override def ap[A, B](fa: F[A])(f: F[A => B]): F[B] = ???
+  override def ap[A, B](fa: F[A])(f: F[A => B]): F[B] = flatMap(fa)(???)
 
   //TODO EXO3
-  def flatten[A](ffa: F[F[A]]): F[A] = ???
+  def flatten[A](ffa: F[F[A]]): F[A] = flatMap(ffa)(???)
 
 }
 

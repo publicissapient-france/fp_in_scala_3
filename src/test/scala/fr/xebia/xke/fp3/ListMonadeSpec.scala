@@ -76,19 +76,19 @@ class ListMonadeLawSpec extends PropSpec with GeneratorDrivenPropertyChecks with
 
   property("right identity law of List Monad instance", EXO_3_4) {
 
-    forAll(Gen.identifier) { a =>
-      val f: (String) => List[Char] = (s: String) => List(s.toCharArray)
+    forAll(listsOf(Gen.identifier)) { fa =>
 
-      f(a) shouldBe flatMap(point(a))(f)
+      fa shouldBe flatMap(fa)(a => point(a))
     }
 
   }
 
   property("left identity law of List Monad instance", EXO_3_4) {
 
-    forAll(listsOf(Gen.identifier)) { fa =>
+    forAll(Gen.identifier) { a =>
+      val f: (String) => List[Char] = (s: String) => List(s.toCharArray)
 
-      fa shouldBe flatMap(fa)(a => point(a))
+      f(a) shouldBe flatMap(point(a))(f)
     }
 
   }

@@ -155,19 +155,21 @@ class RetryMonadLawSpec extends PropSpec with GeneratorDrivenPropertyChecks with
 
   property("right identity law of List Monad instance", EXO_3_8) {
 
+    forAll(retryOf(Gen.identifier)) { fa =>
+
+      fa shouldBe flatMap(fa)(a => point(a))
+    }
+    
+  }
+
+  property("left identity law of List Monad instance", EXO_3_8) {
+
     forAll(Gen.identifier) { a =>
       val f: (String) => Retry[String] = (s: String) => Success(s + "-after-flatMap")
 
       f(a) shouldBe flatMap(point(a))(f)
     }
-  }
-
-  property("left identity law of List Monad instance", EXO_3_8) {
-
-    forAll(retryOf(Gen.identifier)) { fa =>
-
-      fa shouldBe flatMap(fa)(a => point(a))
-    }
+    
   }
 
   property("associative flatMap", EXO_3_8) {
@@ -200,8 +202,10 @@ class RetryMonadLawSpec extends PropSpec with GeneratorDrivenPropertyChecks with
       val result_of_flatMap_of_flatMap = flatMap(flatMap(fa)(f))(g)
       val result_of_nested_flatMap = flatMap(fa)((a: String) => flatMap(f(a))(g))
 
-      result_of_flatMap_of_flatMap shouldBe result_of_nested_flatMap
-
+      result_of_flatMap_of_flatMap match {
+        case Success(t, tries) => result_of_flatMap_of_flatMap shouldBe result_of_nested_flatMap
+        case f: Failure => result_of_nested_flatMap shouldBe a[Failure]
+      }
     }
   }
 

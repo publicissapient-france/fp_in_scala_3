@@ -1,8 +1,8 @@
 # Monade
 
-6 lettres et beaucoup de mystères. La monade est souvent le terme le plus entendu quand on parle de pattern en programmation fonctionnelle. 
+6 lettres et bien du mystère. La monade est souvent le terme le plus entendu quand on parle de pattern en programmation fonctionnelle.
 Elle donne du fil à retordre au programmeur qui tente de la comprendre. Nous allons voir ensemble qu'il n'y a rien de mystérieux. 
-La monade est au contraire un design pattern puissant pour construire des API élégantes et simples à utiliser.
+La monade est au contraire un design pattern puissant permettant de construire des API élégantes et simples à utiliser.
 
 
 ## Petit rappel
@@ -165,7 +165,13 @@ Soit
 
 	fa: F[A] 
 	
+	//Alors
 	fa shouldBe flatMap(fa)(a => point(a))
+	
+	//en regardant les types
+	F[A] === flatMap(F[A])(A => point(A))
+	F[A] === flatMap(F[A](A => F[A])
+	F[A] === F[A]
 
 * left identity
 
@@ -174,7 +180,14 @@ Soit
 	f: (A => F[B]) 
 	a: A 
 	
-	f(a) shouldBe flatMap(point(a)(f)
+	//Alors
+	f(a) shouldBe flatMap(point(a))(f)
+	
+	//en regardant les types
+	f(A) === flatMap(point(A))(A => F[B])
+	F[B] === flatMap(point(A))(A => F[B])
+	F[B] === flatMap(F[A])(a => F[B])
+	F[B] === F[B]
 
 
 * associative flatMap
@@ -184,12 +197,22 @@ Soit
 	fa: F[A] 
 	f: A => F[B]
 	g: B => F[C]
-	
+
+	//Alors
 	val result_of_flatMap_of_flatMap = flatMap(flatMap(fa)(f))(g)
 	val result_of_nested_flatMap     = flatMap(fa)((a: A) => flatMap(f(a))(g))
 	 
 	result_of_flatMap_of_flatMap shouldBe result_of_nested_flatMap
+	
+	//en regardant les types
+	flatMap(flatMap(F[A])(A => F[B]))(B => F[C]) === flatMap(F[A])(A => flatMap(A => F[B](A))(B => F[C]))
+	flatMap(F[B])					 (B => F[C]) === flatMap(F[A])(A => flatMap(A => F[B](A))(B => F[C]))
+	F[C] 										 === flatMap(F[A])(A => flatMap(A => F[B](A))(B => F[C]))
+	F[C] 										 === flatMap(F[A])(A => flatMap(F[B]		)(B => F[C]))
+	F[C] 										 === flatMap(F[A])(A => F[C])
+	F[C] 										 === F[C]
 
+Les tests sont déjà codés. Vous pouvez les parcourir et les comprendre. Vous pouvez aussi sur papier vérifier les démonstrations basées sur les types.
 
 Vous pouvez lancer les tests dans sbt avec
 
@@ -197,8 +220,8 @@ Vous pouvez lancer les tests dans sbt avec
 
 ##Exo5: Retry
 
-Il est temps de mettre tout cela en pratique. Il existe des tas de types qui pourraient avoir un comportement monadique.
-Nous allons créer le notre, **Retry**. **Retry** est une structure qui permet d'exécuter plusieurs fois un morceau de code et d'encapsuler le retour.
+Il est temps de mettre tout cela en pratique. Il existe une multitude de types qui pourraient avoir un comportement monadique.
+Nous allons créer le notre, **Retry**. **Retry** est une structure qui permet d'exécuter plusieurs fois un morceau de code et d'encapsuler la capacité à réessayer.
 Voici les types que vous pouvez retrouver dans **fr/xebia/xke/fp3/Retry.scala**.
 
 	sealed trait Retry[+T]
@@ -211,7 +234,7 @@ Voici les types que vous pouvez retrouver dans **fr/xebia/xke/fp3/Retry.scala**.
 	  def apply[T](retries: Int, tries: Int = 0)(t: () => T): Retry[T] = ???
 	}
 
-Évaluer une expression avec **Retry.apply** retourne **Success** avec la dernière valeur retournée dans le cas d'un succès, ou **Failure** avec la dernière expection si l'expression en génère une.
+Évaluer une expression avec **Retry.apply** retourne **Success** avec la dernière valeur retournée dans le cas d'un succès, ou **Failure** avec la dernière exception si l'expression en génère une.
 
 Implémenter maintenant la méthode **Retry.apply**.
 
@@ -252,7 +275,7 @@ Si on veut parser deux éléments et les sommer, on s'attend à
 		case e=>
 	} ...
 	
-Par contre, avec la signature typée en Retry[Int], ce n'est pas possible. Du coup, la seule façon de le faire est:
+Par contre, avec la signature typée en Retry[Int], ce n'est pas possible d'utiliser l'instruction try,catch. Du coup, la seule façon de le faire est:
 
 
 	val k:Retry[Int] = flatMap(Retry(tries = 1 , () => parseInt("1"))){i => 
@@ -261,7 +284,7 @@ Par contre, avec la signature typée en Retry[Int], ce n'est pas possible. Du co
 		 }
 	 }
 
-Si maitenant on encapsule le **parseInt** de pour qu'il renvoie un **Retry[Int]**, on a :
+Si maitenant on encapsule le **parseInt** pour qu'il renvoie un **Retry[Int]**, on a :
  	
  	def retryParseInt(s:String): Retry[Int] = Retry(tries = 1)(() => parseInt(s))
  	
@@ -278,7 +301,9 @@ C'est un peu mieux mais encore lourd. Scala permet d'écrire cela sous forme de 
 		j <- retryParseInt("2")
 	} yield i + j
 	
-Pour cela, il faut changer une chose sur le trait **Retry**. Il faut implémenter la méthode **map** et **flatMap** directement dessus.
+Contrairement au **for** en langage procédural, ici le for ne se contente pas de faire des boucles. C'est une expression qui retourne une valeur. De plus ce n'est qu'un sucre du compilateur car tout est traduit en map et flatMap.
+	
+Pour pouvoir utiliser Retry dans un for, il faut changer une chose sur le trait **Retry**. Il faut implémenter la méthode **map** et **flatMap** dans ce trait.
 
 	sealed trait Retry[+T] {
 
@@ -288,9 +313,9 @@ Pour cela, il faut changer une chose sur le trait **Retry**. Il faut implémente
 
 	}
 
-Le for comprehension supporte aussi deux autres méthodes, **filter** et **foreach**.
+Le **for comprehension** supporte aussi deux autres méthodes, **filter** et **foreach**.
 
-**filter** permet de filter l'exécution d'un programme en fonction d'une condition sur une valeur de Success.
+**foreach** permet quant à lui d'exécuter du code comme le dernier map, sauf que son résultat n'est pas renvoyé par l'expression **for**. C'est une opération à effet de bord.
 
 Implémenter filter sur le trait Retry.
 
@@ -304,7 +329,7 @@ Ensuite, il est possible d'écrire ceci
 	} yield i + j
 
 
-**foreach** permet quant à lui d'exécuter des effets de bords quand le résultat du yield n'est pas intéressant, genre **println**.
+**foreach** permet quant à lui d'exécuter des effets de bords quand le résultat du yield n'est pas intéressant, genre **println**. Nous le l'implémenterons pas dans cet exercice.
 
 Vous pouvez décommenter le code des tests de l'exercice 7 et lancer les tests dans sbt avec
 
@@ -313,7 +338,7 @@ Vous pouvez décommenter le code des tests de l'exercice 7 et lancer les tests d
 
 ##Exo8: Retry monads law
 
-Si Retry a une instance de Monade, cette dernière doit respecter les lois associées. Décommenter les tests de l'exo 8 et lancer les tests dans sbt avec
+Si Retry a une instance de Monade, cette dernière doit respecter les lois associées. Lisez les tests de l'exo 8 dans la classe **fr.xebia.xke.fp3.RetryMonadLawSpec**  et lancer les dans sbt avec
 
 	sbt exo8
 
@@ -323,7 +348,7 @@ Que remarquez vous sur le dernier? Qu'en concluez-vous ?
 
 Nous voici donc avec 3 abstractions. Mais comment choisir? 
 
-Petit conseil, choisissez toujours l'abstraction la plus simple. Nous avons vu que pour passer d'un foncteur à un applicative et d'un applicative à une monade, il y a des propriétés suplémentaire à ajoute des lois et contraintes que le type et son opération de composition doit respecter.
+Choisissez toujours l'abstraction la plus simple. Nous avons vu que pour passer d'un foncteur à un applicative et d'un applicative à une monade, il y a des propriétés suplémentaires qui s'ajoutent des lois et contraintes que le type et son opération de composition doit respecter.
 
 Commencez donc par utiliser un Foncteur si map suffit, vous ferez le choix d'un applicative quand vos structures doivent être manipulées 2 par 2, et une monade pour chaîner des traitements.
 
@@ -355,9 +380,9 @@ Dans le cadre du foncteur, nous avons déjà créé un foncteur d'Option et un f
       val thirdResult = listListFoncteur.map(list_of_list)(plus_one)
       secondResult shouldBe List(List(2, 3, 4), Nil)
 
-Ce qui est intéressant et puissant, c'est d'avoir écrit une seule fois l'instance de foncteur de list et d'option puis ensuite de composer ses instances pour être capable d'appliquer cette fonction **plus_one** dans plusieurs contexte.
+Ce qui est intéressant et puissant, c'est d'avoir écrit une seule fois l'instance de foncteur de list et d'option puis ensuite de composer ses instances pour être capable d'appliquer cette fonction **plus_one** dans plusieurs contextes.
 
-On peut ainsi application **plus_one** sur une List[Option], une Option[List] ou encore List[List].
+On peut ainsi appliquer **plus_one** sur une List[Option], une Option[List] ou encore List[List].
 
 Cela est aussi vrai pour les applicatives.
 
@@ -366,21 +391,27 @@ Cela est aussi vrai pour les applicatives.
       //composition de l'applicative list puis option
       val list_of_options_1 = List(Some(1), None)
       val list_of_options_2 = List(None, Some(2))
+      
       val listOptionApplicative = Applicative.listApplicative.compose(Applicative.optionApplicative)
+      
       val firstResult = listOptionApplicative.apply2(list_of_options_1, list_of_options_2)(plus)
       firstResult shouldBe List(None, Some(3), None, None)
 
 	  //composition de l'applicative option puis list
       val option_of_list1 = Some(List(1, 2, 3))
       val option_of_list2 = None
+      
       val optionListApplicative = Applicative.optionApplicative.compose(Applicative.listApplicative)
+      
       val secondResult = optionListApplicative.apply2(option_of_list1, option_of_list2)(plus)
       secondResult shouldBe None
 
       //composition de l'applicative list puis list
       val list_of_list_1 = List(List(1), Nil)
       val list_of_list_2 = List(Nil, List(2, 3))
+      
       val listListApplicative = Applicative.listApplicative.compose(Applicative.listApplicative)
+      
       val thirdResult: List[List[Int]] = listListApplicative.apply2(list_of_list_1, list_of_list_2)(plus)
       thirdResult shouldBe List(
         Nil,
@@ -389,10 +420,14 @@ Cela est aussi vrai pour les applicatives.
         Nil
       )
 
-**compose** est une méthode puissante générique pour TOUTES les instances de foncteur et applicative.
+**compose** est une méthode puissante générique pour TOUTES les instances de foncteurs et applicatives.
 
 Nous ne le ferons pas ici mais pour une monade, il est nécessaire d'écrire la méthode compose pour chaque combinaison!
 L'instance Monad[Option[List[_]] est différente de celle Monad[List[Option[_]]. D'ailleurs, il existe une monade pour combiner les monades! Mais cela dépasse le cadre de cet atelier.
+
+Vous pouvez lancer les tests avec
+	
+	sbt exo9
 	
 ##Exo10: Another monad, the writer
 
@@ -400,9 +435,9 @@ Et voici un dernier exercice pour se mettre en jambe. Nous allons écrire la mon
 
 Celle-ci permet d'encapsuler l'écriture d'une "log" avec l'application d'une fonction. 
 
-Nous allons créé ici une instance de monade Writer qui maintient une chaine de caractères des différentes opérations effectuées sur la monade. Nous l'appelons **StringWriter**.
+Nous allons créer ici une instance de monade Writer qui maintient une chaîne de caractères des différentes opérations effectuées sur la monade. Nous l'appelons **StringWriter**.
 
-C'est donc une *case class* qui contient une valeur et la chaîne de caractères de log. Il existe deux méthodes de constructions sur l'objet compagnon, **startWith** et **alterTo**. 
+C'est donc une *case class* qui contient une valeur de type **T** et la chaîne de caractères de log. Il existe deux méthodes de constructions sur l'objet compagnon, **startWith** et **alterTo**. 
 Ce sont simplément des constructeurs qui apportent de la sémantique à la lecture du code.
 
 Implémenter l'instance de monade de StringWriter.
@@ -418,6 +453,8 @@ Implémenter l'instance de monade de StringWriter.
 	object StringWriter {
 
 	  private def now = Instant.now()
+	  
+	  def apply[A](a: A): StringWriter[A] = stringWriterMonad.point(a)
 
 	  def startWith[A](a: A): StringWriter[A] = apply(a)
 
@@ -447,6 +484,8 @@ TO JSON Writer
 	object JsonWriter {
 
 	  private def now = Instant.now()
+	  
+	  def apply[A](a: A): JsonWriter[A] = jsonWriterMonad.point(a)
 
 	  def startWith[A](a: A): JsonWriter[A] = apply(a)
 
@@ -465,6 +504,11 @@ TO JSON Writer
 		override def point[A](a: A): JsonWriter[A] = ???
 	  }
 	}
+	
+	
+Vous pouvez lancer les tests avec
+
+	sbt exo10
 	
 Quels sont les points communs entre les deux implémentations? Les différences?
 
