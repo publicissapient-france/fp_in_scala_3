@@ -19,3 +19,5 @@ object EXO_3_7 extends Tag("EXO_3_7")
 object EXO_3_8 extends Tag("EXO_3_8")
 
 object EXO_3_9 extends Tag("EXO_3_9")
+
+object EXO_3_10 extends Tag("EXO_3_10")

@@ -2,9 +2,9 @@ package fr.xebia.xke.fp3
 
 import fr.xebia.xke._
 import org.scalacheck.Gen
-import org.scalacheck.Gen.{identifier, choose, oneOf}
+import org.scalacheck.Gen.oneOf
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
-import org.scalatest.{Tag, FunSpec, Matchers, PropSpec}
+import org.scalatest.{FunSpec, Matchers, PropSpec}
 
 class ListMonadeSpec extends FunSpec with Matchers {
 
@@ -76,23 +76,21 @@ class ListMonadeLawSpec extends PropSpec with GeneratorDrivenPropertyChecks with
 
   property("right identity law of List Monad instance", EXO_3_4) {
 
+    forAll(listsOf(Gen.identifier)) { fa =>
+
+      fa shouldBe flatMap(fa)(a => point(a))
+    }
+
+  }
+
+  property("left identity law of List Monad instance", EXO_3_4) {
+
     forAll(Gen.identifier) { a =>
       val f: (String) => List[Char] = (s: String) => List(s.toCharArray)
 
       f(a) shouldBe flatMap(point(a))(f)
     }
 
-    //fail("prove me, I'm famous")
-  }
-
-  property("left identity law of List Monad instance", EXO_3_4) {
-
-    forAll(listsOf(Gen.identifier)) { fa =>
-
-      fa shouldBe flatMap(fa)(a => point(a))
-    }
-
-    //fail("prove me, I'm famous")
   }
 
   property("associative flatMap", EXO_3_4) {
@@ -108,8 +106,6 @@ class ListMonadeLawSpec extends PropSpec with GeneratorDrivenPropertyChecks with
       result_of_flatMap_of_flatMap shouldBe result_of_nested_flatMap
 
     }
-
-    //fail("prove me, I'm famous")
   }
 
 }

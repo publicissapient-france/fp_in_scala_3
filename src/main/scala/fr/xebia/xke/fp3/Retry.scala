@@ -2,14 +2,19 @@ package fr.xebia.xke.fp3
 
 sealed trait Retry[+T] {
 
+  //TODO EXO7
   def flatMap[B](f: (T => Retry[B])): Retry[B] = Monade.retryMonade.flatMap(this)(f)
 
+  //TODO EXO7
   def map[B](f: (T => B)): Retry[B] = Monade.retryMonade.map(this)(f)
 
-  def filter(predicate: (T => Boolean)): Retry[T] = this match {
-    case Success(t, tries) if predicate(t) => this
-    case Success(t, tries) => Failure(new IllegalArgumentException(s"$t does not match"))
-    case Failure(t) => this
+  //TODO EXO7
+  def filter(predicate: (T => Boolean)): Retry[T] = this.flatMap { t =>
+    if (predicate(t)) {
+      this
+    } else {
+      Failure(new IllegalArgumentException(s"$t does not match"))
+    }
   }
 
 }
@@ -22,14 +27,17 @@ object Retry {
 
   //TODO EXO5
   def apply[T](retries: Int, tries: Int = 0)(t: () => T): Retry[T] =
-    if (retries > 0) {
+    if (tries < retries) {
+
+
       try {
         Success(t(), tries)
       } catch {
         case throwable: Throwable =>
-          if (retries > 1) {
-            Retry.apply(retries - 1, tries + 1)(t)
-          } else {
+          if ((tries + 1) < retries) {
+            Retry(retries, tries + 1)(t)
+          }
+          else {
             Failure(throwable)
           }
       }

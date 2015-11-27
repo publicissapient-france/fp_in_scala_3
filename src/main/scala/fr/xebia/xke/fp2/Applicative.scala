@@ -5,6 +5,7 @@ import fr.xebia.xke._
 import scala.language.higherKinds
 
 trait Applicative[F[_]] extends Foncteur[F] {
+  self =>
 
   def point[A](a: A): F[A]
 
@@ -24,6 +25,14 @@ trait Applicative[F[_]] extends Foncteur[F] {
 
   def mapply2[A, B, C](a: A, b: B)(f: F[(A, B) => C]): F[C] = ap2(point(a), point(b))(f)
   
+  def compose[G[_]](AG: Applicative[G]): Applicative[({type λ[α] = F[G[α]]})#λ] = new Applicative[({type λ[α] = F[G[α]]})#λ] {
+
+    override def ap[A, B](fa: F[G[A]])(f: F[G[A => B]]): F[G[B]] =
+      self.apply2(f, fa)((ff, ga) => AG.ap(ga)(ff))
+
+    override def point[A](a: A): F[G[A]] = self.point(AG.point(a))
+  }
+
 }
 
 object Applicative{
